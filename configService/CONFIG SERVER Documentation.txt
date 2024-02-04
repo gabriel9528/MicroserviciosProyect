@@ -1,0 +1,60 @@
+SPRING CLOUD CONFIG SERVER
+
+Es un servidor de configuracion centralizado, en donde todas las configuraciones de nuestros microservicios se van a centralizar, permite tener una jerarquia de configuraciones es decir a traves de profile tu vas a estar definiendo tus configuraciones para distintos entornos, tambien permite tener un historico de tu configuracion, ya que tu puedes guardar tus configuraciones en un servidor de control de versiones, "centraliza la configuracion de varios entornos".
+
+Las dependencias a usar son "config server" y "spring security"
+
+1. Lo primer que hacemos es marcar nuestro proyecto como un servidor de configuracion y para ello lo marcamos con la siguiente notacion en nuestra clase principal: @EnableConfigServer
+
+2. Modificamos nuestro archivo de "application.properties" por un "boostrap.yml" 
+
+bootstrap.yml se utiliza para la inicialización inicial de la configuración antes de cargar el resto de la aplicación.
+La elección del nombre es más una convención de nomenclatura adoptada por la comunidad de Spring 
+
+bootstrap.yml se utiliza para cargar la configuración inicial, incluida la ubicación del servidor de configuración central, antes de que se cargue el contexto de la aplicación. Esto permite que la aplicación obtenga su configuración centralizada antes de inicializarse por completo.
+
+y colocamos lo siguiente: 
+
+Server:
+  port: 8081
+
+3. Los archivos de configuracion de cada uno de nuestros microservicios ahora lo vamos a ubicar en nuevo lugar desde donde va a estar leyendo "configService" para exponer estas configuraciones a traves de una ApiRest.
+
+	3.1. Primeramente creamos una carpeta "config-data" la cual tendra todos los archivos de configuracion de nuestros microservicios(renombramos con el nombre de cada microservicio para identificarlo), es decir copiamos el archivo "bootstrap.yml" de cada microservicio a la carpeta "config-data", hacemos esto para los tres microservicios.
+
+	3.2. Antes se debe de haber creado un repositorio en gitHub el cual estara enlasado al proyecto, recuerda trabajar con variables de entorno tanto para el username como para el password de acceso a gitHub, por ello configuramos nuestras variables de entorno en "edit" -> "enviroments variables": colocamos en GIT_USER=gabrielferv95@gmail.com Y en GIT_PASSWORD="TU CONTRASEÑA", ojo es necesario especificar la rama por defecto: "default-label: "main" y ejecutamos el proyecto "configService"
+
+4. Nos dirigimos a POSTMAN y probamos con las rutas con el metodo GET, y constatamos que nos retorne los archivos de configuracion:
+
+http://root:s3cr3t@localhost:8081/customerService/default
+http://root:s3cr3t@localhost:8081/productService/default
+http://root:s3cr3t@localhost:8081/shoppingService/default
+
+5. En resumen nuestro proyecto configService se conecta a las configuraciones de nuestros 3 microservicios accedidos a travez del "bootstrap.yml" del "configService" en donde se encuentra nuestro repositorio el cual contendra precisamente el "config-data" el cual contiene las configuraciones de nuestros microservicios.
+
+6. Lo siguiente es habilitar la configuracion de "configService" en cada uno de nuestros microservicios, por ello nos dirigimos a cada uno de nuestros microservicios y habilitamos la dependencia: 
+
+implementation 'org.springframework.cloud:spring-cloud-starter-config'
+
+lo siguiente es modificar el "application.yml" -> "boostrap.yml" con la siguiente configuracion, para que acceda al "configService" desde cada microservicio:
+
+spring:
+  application:
+    name: customerService
+  cloud:
+    config:
+      uri: http://localhost:8081
+      username: root
+      password: s3cr3t
+
+y el proyecto de "customerService" al inicializarlo debe inicializar en el puerto 8092 correspondiente a "customerService"
+
+
+En conclusion los diferentes microservicios al ejecutarse se conectaran al puerto 8081(puerto del configService) que es desde donde obtendra las diferentes configuraciones ya que este se conecta al config-data desde donde se encuentran todas las configuraciones de los 3 microservicios y desde ahi accedera al puerto de cada microservicio en caso de "customerService" sera el puerto 8092.
+
+probamos si tenemos acceso otra vez a nuestro microservicio: http://localhost:8092/customers
+
+OJO: Tener cuidado con la configuracion del configService en cada microservicio, se debe de apuntar correcto al microservicio correcto:
+
+application:
+    name: customerService

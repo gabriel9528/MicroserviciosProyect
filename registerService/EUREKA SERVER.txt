@@ -1,0 +1,26 @@
+EUREKA SERVER
+
+Nos permite tanto el registro como la localizacion de las instancias de nuestros micreoservicios que estan corriendo.
+Cada instancia de micro-servicio utilizando eureka-client notifica su estado al eureka-server y esto la hace cada 30 segundos.
+Tambien cada cliente cachea una copia de registro de eureka server para saber cuales son los microservicios que estan ejecutandose en el eureka-server.
+Eureka-server entra en modo self-preservation cuando el numero de microservicios registrados no notifican su estado de salud al eureka server es decir cuando pasan un umbral del numero de microservicios que no notifican a eureka-server, este determina que hay un problema en la red entonces entra en modo self-preservation.
+Ahora en nuestro servicio de registerService (EUREKA SERVER)para que nuestros microservicios cuando aranque se registren en un servicio centralizado, para que despues cuando nuestros clientes quieran acceder a ellos puedan ser descubiertos a traves de register-service.
+
+Dependencias a usar: Eureka-Server, Config-Client
+
+1. Lo primero es decorar nuestra clase principal con la notacion: @EnableEurekaServer
+2. Procedemos a crear las configuraciones de eureka-server las cuales la vamos a registrar en la carpeta de configuracion de todos nuestros microservicios en "config-data", ahi creamos nuestro archivo de configuracion de eureka-server, que se llamara: "registryService", y colocamos este codigo: 
+
+server:
+  port: 8099
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    registerWithEureka: false
+    fetchRegistry: false
+    serviceUrl:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+
+con esto estamos definiendo donde va a estar escuchando eureka-server las peticiones y los registros de neustros microservicios
