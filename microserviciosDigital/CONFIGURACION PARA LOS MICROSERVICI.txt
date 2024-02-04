@@ -1,0 +1,106 @@
+CONFIGURACION PARA LOS MICROSERVICIOS - PRODUCT, CUSTOMER, Y SHOPPING
+
+En el "build.gradle": debe ir esta configuracion: 
+
+plugins {
+	id 'org.springframework.boot' version '2.2.5.RELEASE'
+	id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+	id 'java'
+}
+
+group = 'com.microservicios'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_11
+	targetCompatibility = JavaVersion.VERSION_11
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	set('springCloudVersion', "Hoxton.SR7")
+}
+
+dependencies {
+
+	//implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	//implementation 'org.springframework.cloud:spring-cloud-starter-config'
+	//implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+	//implementation 'org.springframework.cloud:spring-cloud-sleuth:1.1.3.RELEASE'
+	//implementation 'org.springframework.boot:spring-boot-starter-validation'
+	//implementation 'javax.validation:validation-api:2.0.1.Final'
+	compileOnly 'org.projectlombok:lombok'
+	runtimeOnly 'com.h2database:h2'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+
+
+
+
+- se debe de modificar el archivo de: "gradle-wrapper.properties" asi: 
+
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-6.6-bin.zip
+networkTimeout=10000
+validateDistributionUrl=true
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+
+y en settings -> en build -> en gradle -> marcar como java 11
+
+lo mismo en "project Structure" -> seleccionar java_11
+
+
+Luego en application.properties cambiarla a application.yml, agregar la siguiente configuracion de conexion con nuestra base de datos embebida (H2), cambiar el puerto segun corresponda:
+
+Server:
+  port: 8092
+
+spring:
+  h2:
+    console:
+      enabled: true
+
+  datasource:
+    url: jdbc:h2:mem:customerDB;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: org.h2.Driver
+    platform: h2
+    username: sa
+    password:
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.H2Dialect
+    properties:
+      hibernate:
+        show_sql: true
+        use_sql_comments: false
+        format_sql: false
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} ${LOG_LEVEL_PATTERN:-%5p} %m%n"
+
+
+- Por ultimo no olvidar agregar el archivo "data.sql" en "resources" -> con las inserciones sql correspondientes al microservicio
