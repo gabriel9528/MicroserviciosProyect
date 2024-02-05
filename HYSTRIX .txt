@@ -1,0 +1,83 @@
+HYSTRIX 
+
+Implementa el patron circuit Breaker, nos da la finalidad de mejorar la fiabilidad de nuestro sistema y realizar un control de latencia y tolerancia a fallos, cuando nuestro microservicio depende de otro microservicio y si uno de estos falla ya sea por aplicacion o latencia de red nuestro microservicio puede implementar un fallback de tal manera que permite implmentar una respuesta alternativa si este microservicio falla es decir implementar un plan B de tal manera que toda la transaccion siga funcionando, tambien si dado que este microservicio sigue fallando y pasa cierto umbral indica que se abra este circuito de tal manera que si siguen llegando mas peticiones ya no se envien las peticiones a este microservicio ya que si se siguen enviando las peticiones a este servicio estas peticiones van a encolarse porque no esta respondiendo y esto puede provocar que nuestro microservicio caiga.
+
+1. Habilitamos las dependencias de HYSTRIX: 
+implementation 'org.springframework.cloud:spring-cloud-starter-netflix-hystrix'
+//implementation 'org.springframework.cloud:spring-cloud-starter-netflix-hystrix-dashboard'
+implementation (group: 'org.springframework.cloud', name: 'spring-cloud-netflix-hystrix-dashboard', version: '2.2.2.RELEASE')
+
+- Tambien habilitamos actuator: 
+implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+2. En nuestra clase principal la marcamos con: 
+
+@EnableHystrix
+@EnableHystrixDashboard
+
+3. Tambien tenemos que modificar el archivo de configuracion de "shoppingService" que se encuentra en "config-data":
+
+Feign:
+  hystrix:
+    enabled: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+esto para habilitar HYSTRIX con FEIGN y habilitar ACTUATOR.
+
+4. Actualizar estos nuevos cambios en el repositorio ya que se actualizo el "config-data"
+
+5. Vamos a implementar un fallback en nuestro cliente de customer en "CustomerClient" dentro de "shoppingService" de tal manera que si la llamada al metodo "getCustomer" falla se implemente un fallback, para ello creamos una clase "CustomerHystrixFallbackFactory" dentro de nuestro paquete "client" en "shoppingService", es aqui donde se implementara nuestro plan B, es decir se implementara un Customer con datos vacios: 
+
+@Component
+public class CustomerHystrixFallbackFactory implements CustomerClient{
+    @Override
+    public ResponseEntity<Customer> getCustomer(long id) {
+        Customer customer = Customer.builder()
+                .firstName("none")
+                .lastName("none")
+                .email("none")
+                .photoUrl("none").build();
+        return ResponseEntity.ok(customer);
+    }
+}
+
+6. Ahora vamos a referenciarlo en nuestro cliente:
+
+	6.1 Modificamos nuestra interface "CustomerClient" asi:
+
+@FeignClient(name="customerService", fallback = CustomerHystrixFallbackFactory.class)
+public interface CustomerClient {
+
+    @GetMapping("/customers/{id}")
+    public ResponseEntity<Customer> getCustomer(@PathVariable("id") long id) ;
+}
+
+7. Ahora levantamos todos nuestros microservicios:
+configService
+registerService
+customerService
+prodcutService
+shoppingService
+
+8. Entramos al hystrix(Dashboard) de nuestra servicio de shoppingService: http://localhost:8093/hystrix
+
+	8.1. Le pasamos un endpoint donde Hystrix esta enviando un stream de los eventos a traves de actuator:
+	http://localhost:8093/actuator/hystrix.stream y le damos en "monitorear el stream".
+
+	8.2. Vamos a POSTMAN para empezar a ver las peticiones: 
+	http://localhost:8093/invoices/1
+
+	8.3. Ahora vamos a simular que nos tumbamos el servicio de customer: para nuestros fines paramos el ervicio de customerService
+	
+	8.4. Volvemos a hacer la peticion y vemos que nuestra peticion al endpoint: http://localhost:8093/invoices/1 ya no se cae y trae por defecto null y none que es lo que configuramos en nuestro fallback
+
+
+
+
+
+
+
