@@ -1,0 +1,67 @@
+ACTUATOR && SPRING BOOT ADMIN SERVER
+
+Actuator sirve para monitorizar el estado y las metricas de cada microservicio
+
+Actuator es una libreria que proporciona out-of-the-box con amplia coleccion de funcionalidades de monitorizacion y administracion para aplicaciones desarrolladas con Spring Boot accesibles mediante endpoints via REST y/o con JMX Bean.
+Actuator nos porporciona unas metricas para los endpoints: http://localhost:8091/actuator donde podemos ver todas las metricas de las funcionalidades que nos porporciona actuator
+
+1. En el config-data dentro de cada archivo de configuracion de nuestros microservicios tenemos que colocar lo siguiente:
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+para habilitar Actuator
+
+
+2. Ahora tenemos que actualizar el repositorio
+
+3. Ahora tenemos que ir a cada micorservicio y habilitarle la dependencia de actuator:
+
+implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+4. Ahora levantamos cada uno de los microservicios para verificar que este funcionando actuator correctamente
+
+configService
+registerService
+customerService
+productService
+shoppingService
+
+5. Ahora verificamos en: 
+http://localhost:8091/actuator
+http://localhost:8092/actuator
+http://localhost:8093/actuator
+
+6. Para ayudarnos a visualizar esto de una mejor manera y poder administrar cierta informacion crearemos un proyecto Admin Server y vamos a configurar a nuestros microservicios para que envien la informacion atraves de actuator a "adminService", para ello vamos a spring initializer y creamos nuestro proyecto "adminService" y con dependencias: Admin Server
+
+7. Marcamos nuestra clase Main como: @EnableAdminServer
+
+8. Y en nuestro application.properties ponemos lo siguiente: 
+spring.application.name=admin-service
+server.port=8086
+
+Y ejecutamos nuestra aplicacion "adminService"
+
+9. Ahora tenemos que ir a nuestros microservicios para que se conecten a "adminService":
+
+habilitamos la dependencia: 
+compile group: 'de.codecentric', name: 'spring-boot-admin-starter-client', version: '2.2.1'
+
+Y en nuestro "bootstrap.yml", agregamos:
+
+ boot:
+    admin:
+      client:
+        url: http://localhost:8086
+
+10. Volvemos a reiniciar cada uno de nuestros servicios de customerService, productService y shoppingService
+
+11. Entramos a: http://localhost:8086 -> para ver nuestros microservicios corer
+
+
+
+
+
