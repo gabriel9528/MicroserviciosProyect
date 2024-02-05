@@ -1,0 +1,87 @@
+FEIGN CLIENT - Comunicacion entre servicios
+
+Es una libreria para generar clientes de servicio REST de manera declarativa sin la necesidad de utilizar RestTemplate.
+Se integra con EUREKA para el descubrimiento, con Hystrix permitiendo definir el fallback a nivel de clientes y con Ribbon para el balanceo de carga.
+
+1. Modificamos el metodo "getInvoice" de shoppingService para actualizar y traer el cliente d customerService y los datos de los productos del productServie y tambien vamos a modificar el metodo "createInvoice"para actualizar el stock de los productos.
+
+2. Creamos un paquete "model" dentro del cual estaran las clases para poder hacer las llamadas a los servicios tanto de "customerService" como de "productService", las cuales son: customer, region, category, product: y copiamos todos los atributos de cada entidad, sin ninguna anotacion solo los atributos, y le agregamos la anotacion "@Data" a nuestras nuevas entidades dentro de "shoppingService"
+
+3. Agregamos la propiedad de "Customer" en "Invoice" y de "Product" en "InvoiceItems"
+
+4. Ahora agregamos la libreria de feign para poder hacer los clientes para poder conectarnos a los microservicios de Customer y Product, agregamos en build.gradle: 
+implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+5. Creamos un paquete de nombre "client" donde agregaremos los clientes de feign(qe seran interfaces) para conectarlos a los microservicios:
+- CustomerClient(interface), copiamos el requestMapping de "customerController", ahora traemos el metodo con el cual consultamos los clientes: 
+    @GetMapping("/{id}")
+    public ResponseEntity<Customer> getCustomer(@PathVariable("id") long id);
+
+y por ultimo decoramos nuestra clase como @FeignClient(name="customerService") -> con esto le estamos indicando que vamos a consumir el servicio de "customerService"
+
+6. Ahora debemos activar en nuestro proyecto para que se pueda usar los clientes de Feign y para eso habilitamos en la clase principal como: @EnableFeignClients.
+
+7. Hacemos lo mismo para nuestro cliente "ProductClient"
+Creamos la interface de "ProductClient" luego copiamos de "ProductController" el: @RequestMapping("/products"), seguidamente copiamos los metodos de: 
+    @GetMapping("/{id}")
+    public ResponseEntity<Product> getProduct(@PathVariable("id") Long id);
+
+    @GetMapping("/{id}/stock")
+    public ResponseEntity<Product> updateStockProduct(@PathVariable("id") Long id, @RequestParam(name="quantity", required = true) Double quantity);
+
+- Luego decoramos nuestra clase como un cliente Feign: @FeignClient(name="productService").
+
+
+8. Ahora si podemos ir a modificar los metodos de nuestros servicios para actualizar el stock(en shoppingService)
+Lo primero que hacemos es inyectar nuestras dependencias de: 
+    @Autowired
+    CustomerClient customerClient;
+
+    @Autowired
+    ProductClient productClient;
+
+9. Revisar el codigo: 
+
+ @Override
+    public Invoice createInvoice(Invoice invoice) {
+        Invoice invoiceDB = invoiceRepository.findByNumberInvoice ( invoice.getNumberInvoice () );
+        if (invoiceDB !=null){
+            return  invoiceDB;
+        }
+        invoice.setState("CREATED");
+        invoiceDB = invoiceRepository.save(invoice);
+        invoiceDB.getItems().forEach( invoiceItem -> {
+            productClient.updateStockProduct( invoiceItem.getProductId(), invoiceItem.getQuantity() * -1);
+        });
+
+        return invoiceDB;
+    }
+
+
+@Override
+    public Invoice getInvoice(Long id) {
+        Invoice invoice = invoiceRepository.findById(id).orElse(null);
+        if(invoice!=null){
+            Customer customer = customerClient.getCustomer(invoice.getCustomerId()).getBody();
+            invoice.setCustomer(customer);
+            List<InvoiceItem> listItems = invoice.getItems().stream().map(invoiceItem -> {
+                Product product = productClient.getProduct(invoiceItem.getProductId()).getBody();
+                invoiceItem.setProduct(product);
+                return invoiceItem;
+            }).collect(Collectors.toList());
+            invoice.setItems(listItems);
+        }
+        return invoice;
+    }
+
+10. Ejecutar las aplicaciones en este orden con "gradle bootRun", verificar primero en eureka-server que nuestras aplicaciones esten levantadas:
+
+configService
+registerService
+customerService
+productService
+shoppingService
+
+
+
+

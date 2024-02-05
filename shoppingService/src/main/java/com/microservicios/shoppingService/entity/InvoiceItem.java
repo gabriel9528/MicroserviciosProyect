@@ -1,5 +1,6 @@
 package com.microservicios.shoppingService.entity;
 
+import com.microservicios.shoppingService.model.Product;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -25,6 +26,10 @@ public class InvoiceItem {
     //Indica que se va a poder trabajar con este parametro, pero no se va a insertar en la base de datos
     @Transient
     private Double subTotal;
+
+    @Transient
+    private Product product;
+
     public Double getSubTotal(){
         if (this.price >0  && this.quantity >0 ){
             return this.quantity * this.price;

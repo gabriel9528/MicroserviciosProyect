@@ -23,4 +23,55 @@ eureka:
     serviceUrl:
       defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
 
-con esto estamos definiendo donde va a estar escuchando eureka-server las peticiones y los registros de neustros microservicios
+con esto estamos definiendo donde va a estar escuchando eureka-server las peticiones y los registros de nuestros microservicios.
+
+3. Cada vez que actualizemos el config-data tenemos que actualizar dichos cambios en el repositorio para nuestro configService lo pueda reconocer.
+
+4. Probamos en POSTMAN que traiga nuestro archivo de configuracion al llamar a la ruta: http://root:s3cr3t@localhost:8081/registryService/default.
+
+5. Ahora vamos a nuestra aplicacion "registerService" y hacemos lo mismo que con los microservicios: modificamos el "application.properties" a "bootstrap.yml" y le pasamos el siguiente codigo para poder acceder al configService: 
+
+spring:
+  application:
+    name: registryService
+  cloud:
+    config:
+      uri: http://localhost:8081
+      username: root
+      password: s3cr3t
+
+recordemos que la dependencia de: 
+implementation 'org.springframework.cloud:spring-cloud-starter-config'
+ya esta habilitado en este caso
+
+
+6. Comprobamos que tengamos acceso al servicio en: http://localhost:8099/
+
+7. Lo que haremos ahora es conectar cada uno de nuestros microservicios a EUREKA SERVER
+
+	7.1 Nos dirigimos al config-data de cada uno de nuestros microservicios y accedemos a la configuracion de cada microservicio y agregamos lo siguiente, para que se puedan conectar a EUREKA-SERVER:
+
+	eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8099/eureka/
+
+Esto se repite para la el archivo de configuracion de cada microservicio
+
+8. Actualizamos nuestro repositorio para que nuestro configService pueda acceder a dichas configuraciones
+
+9. Verificamos en POSTMAN: http://root:s3cr3t@localhost:8081/customerService/default que aparezca la configuracion de EUREKA CLIENT: "eureka.client.serviceUrl.defaultZone": "http://localhost:8099/eureka/"
+
+10. Ahora vamos a customerService para configurar que trabaje con eurekaClient:
+
+	10.1 Habilitamos la dependencia de EUREKA-CLIENT:
+	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+	10.2 Seguidamente marcamos la clase principal de "customerService" como:
+	@EnableEurekaClient y ejecutamos nuestra aplicacion, 
+
+	10.3 Verificamos que se haiga registra en nuestro EUREKA en nuestro: http://localhost:8099/eureka/ 
+
+
+
+
