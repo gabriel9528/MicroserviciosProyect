@@ -1,0 +1,25 @@
+ACTUATOR && SPRING BOOT ADMIN SERVER
+
+Actuator sirve para monitorizar el estado y las metricas de cada microservicio
+
+Actuator es una libreria que proporciona out-of-the-box con amplia coleccion de funcionalidades de monitorizacion y administracion para aplicaciones desarrolladas con Spring Boot accesibles mediante endpoints via REST y/o con JMX Bean.
+Actuator nos porporciona unas metricas para los endpoints: http://localhost:8091/actuator donde podemos ver todas las metricas de las funcionalidades que nos porporciona actuator
+
+1. En el config-data dentro de cada archivo de configuracion de nuestros microservicios tenemos que colocar lo siguiente:
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+para habilitar Actuator
+
+
+2. Ahora tenemos que actualizar el repositorio
+
+3. Ahora tenemos que ir a cada micorservicio y habilitarle la dependencia de actuator:
+
+implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+4. Ahora levantamos cada uno de los microservicios para verificar que este funcionando actuator correctamente

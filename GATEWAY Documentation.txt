@@ -1,0 +1,80 @@
+API GATEWAY
+
+Nos permite tener una unica puerta de entrada a todo el conjunto de nuestros microservicios ya que el cliente no va a estar accediendo directamente a nuestros microservicios si no lo hara atraves de esta puerta de enlace, esta vez lo ahremos que trabaje conjuntamente con EUREKA-SERVER -> registerService.
+
+Nos permite enrutamiento dinamico, monitorzacion y establecer seguridad.
+
+1. Creamos nuestro proyecto con spring initializer y agregamos las dependencias de:
+
+implementation 'org.springframework.cloud:spring-cloud-starter-config'
+implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
+implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+//implementation 'org.springframework.cloud:spring-cloud-starter-sleuth'
+
+2. En nuestro microservicio de "gatewayService" tenemos que cambiar el "application.properties" a "bootstrap.yml" y poner el siguiente codigo: 
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    config:
+      uri: http://localhost:8081
+      username: root
+      password: s3cr3t
+
+que es para nuestra conexion al config-data y por ende al configService
+
+- Luego en nuestro config-data creamos el archivo de configuracion propio de nuestro "gatewayService" que tendra la siguiente configuracion: 
+
+server:
+  port: 8080
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8099/eureka/
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: customerService
+          uri: lb://customerService
+          predicates:
+            - Path=/customers/**
+        - id: productService
+          uri: lb://productService
+          predicates:
+            - Path=/products/**
+        - id: shoppingService
+          uri: lb://shoppingService
+          predicates:
+            - Path=/invoices/**
+
+3. Ahora tenemos que actualizarlo en el repositorio
+
+4. Ahora tenemos que habilitar desde la clase main de nuestro gatewayService con @EnableEurekaClient
+
+5. Levantamos todos nuestros microservicios: 
+
+configService
+registerService
+customerService
+productService
+shoppingService
+
+y luego el gatewayService
+
+6. Ahora vamos a probar nuestros endPoints con POSTMAN:
+
+localhost:8080/customers
+localhost:8080/products
+localhost:8080/invoices/1
+
+En conclusion con apigateway podemos centralizar nuestros enpoint todo al puerto: 8080 
+
+
+
+
